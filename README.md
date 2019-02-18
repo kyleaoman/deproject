@@ -11,14 +11,14 @@ Utility to infer a density profile corresponding to an excess surface density pr
    - `cd` to directory with [`setup.py`](https://github.com/kyleaoman/deproject/blob/master/setup.py)
    - ensure `~/lib/python3.7/site-packages` or similar is on your `PYTHONPATH` (e.g. `echo $PYTHONPATH`), if not, add it (perhaps in `.bash_profile` or similar)
    - run `pip install --prefix ~ -e .` (`-e` installs via symlink, so pulling repository will do a 'live' update of the installation)
- - cd to a directory outside the module and launch `python`; you should be able to do `from deproject import esd_to_piecewise_powerlaw'`
+ - cd to a directory outside the module and launch `python`; you should be able to do `from deproject.piecewise_powerlaw import esd_to_rho`
  
 ## Usage:
 
 ```python
 # example for testing
 import numpy as np
-from deproject import esd_to_piecewise_powerlaw
+from deproject.piecewise_powerlaw import esd_to_rho, _ESD
 import matplotlib.pyplot as pp
 from matplotlib.backends.backend_pdf import PdfPages
 r = np.logspace(-3, 3, 10)
@@ -32,7 +32,7 @@ inner_extrapolation_type = 'extrapolate'
 startstep = np.min(-np.diff(np.log(guess))) / 3.  # probably reasonable
 minstep = .001
 
-best = esd_to_rho_piecewise_powerlaw(
+best = esd_to_rho(
     obs,
     guess,
     r,
@@ -77,7 +77,7 @@ with PdfPages('deproject.pdf') as pdffile:
 ```python
 # example for "real" use
 import numpy as np
-from deproject import esd_to_piecewise_powerlaw
+from deproject.piecewise_powerlaw import esd_to_rho
 r = np.logspace(???)  # 'real' values, not log
 R = np.logspace(???)  # 'real' values, not log
 obs = ???
@@ -87,7 +87,7 @@ extrapolate_inner = True
 inner_extrapolation_type = 'extrapolate'  # or 'flat'
 startstep = np.min(-np.diff(np.log(guess))) / 3.  # probably reasonable
 minstep = .001  # sets tolerance in fit in terms of Delta log(DeltaSigma)
-rho = esd_to_rho_piecewise_powerlaw(
+rho = esd_to_rho(
     obs,
     guess,
     r,
