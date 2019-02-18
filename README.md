@@ -42,7 +42,8 @@ best = esd_to_rho(
     inner_extrapolation_type=inner_extrapolation_type,
     startstep=startstep,
     minstep=minstep,
-    testwith_rho=rho
+    testwith_rho=rho,
+    verbose=True
 )
 
 esd = _ESD(
@@ -96,6 +97,7 @@ rho = esd_to_rho(
     extrapolate_outer=extrapolate_outer,
     inner_extrapolation_type=inner_extrapolation_type,
     startstep=startstep,
-    minstep=minstep
+    minstep=minstep,
+    verbose=False
 )
 ```

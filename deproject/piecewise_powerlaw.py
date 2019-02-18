@@ -140,7 +140,7 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
                startstep=.1, minstep=.001,
-               testwith_rho=None):
+               testwith_rho=None, verbose=False):
     esd = _ESD(
         r,
         R,
@@ -182,12 +182,13 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         else:
             return lp + _logLikelihood(rho)
 
-    def _optimize(guess, startstep=.1, minstep=.01):
+    def _optimize(guess, startstep=.1, minstep=.01, verbose=False):
         cv = np.log(guess)
         cp = _logProbability(cv)
         step = startstep
         while True:
-            print('STEP', step)
+            if verbose:
+                print('STEP', step)
             done = np.zeros(len(cv), dtype=np.bool)
             while not done.all():
                 done = np.zeros(len(cv), dtype=np.bool)
@@ -205,11 +206,13 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                             cp = fpm
                         else:
                             done[nr] = True
-                print('  P={:.3e}'.format(cp))
+                if verbose:
+                    print('P={:.3e}, S={:.6f}'.format(cp, step))
             step = step / 2.
             if step < minstep:
                 break
         best = np.exp(cv)
         return best
 
-    return _optimize(guess, startstep=startstep, minstep=minstep)
+    return _optimize(guess, startstep=startstep, minstep=minstep,
+                     verbose=verbose)
