@@ -136,11 +136,11 @@ class _ESD(object):
         return mean_enclosed - sigma
 
 
-def esd_to_rho_piecewise_powerlaw(obs, guess, r, R, extrapolate_inner=True,
-                                  extrapolate_outer=True,
-                                  inner_extrapolation_type='extrapolate',
-                                  startstep=.1, minstep=.001,
-                                  testwith_rho=None):
+def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
+               extrapolate_outer=True,
+               inner_extrapolation_type='extrapolate',
+               startstep=.1, minstep=.001,
+               testwith_rho=None):
     esd = _ESD(
         r,
         R,
