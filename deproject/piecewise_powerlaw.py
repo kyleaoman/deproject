@@ -207,7 +207,7 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                         else:
                             done[nr] = True
                 if verbose:
-                    print('P={:.3e}, S={:.6f}'.format(cp, step))
+                    print('P={:.6e}, S={:.6f}'.format(cp, step))
             step = step / 2.
             if step < minstep:
                 break
