@@ -131,15 +131,28 @@ class _ESD(object):
             retval = retval[:, :-1]
         sigma = np.sum(retval, axis=1)
         # mean enclosed surface density integrals
-        a_central = 2 * (np.log(sigma[1]) - np.log(sigma[0])) \
-            / (np.log(self.R[2]) - np.log(self.R[0]))
-        b_central = np.log(sigma[0]) - a_central * np.log(self.R[0])
-        mass_central = 2 * np.exp(b_central) / (a_central + 2) \
-            * np.power(self.R[0] * self.R[1], a_central / 2 + 1)
-        mass_annuli = (1 - self.R[:-2] / self.R[2:]) \
-            * np.sqrt(sigma[:-1] * sigma[1:])
+        
+        def integral(x0, x1, a, b):
+            return 2 * np.pi * np.exp(b) / (a + 2) * \
+                (np.power(x1, a + 2) - np.power(x0, a + 2))
+
+        a = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
+            / (np.log(self.R[2:]) - np.log(self.R[:-2]))
+        b = np.log(sigma[:-1]) - a * .5 * np.log(self.R[:-2] * self.R[1:-1])
+        mass_central = integral(
+            0,
+            np.sqrt(self.R[0] * self.R[1]),
+            a[0],
+            b[0]
+        )
+        mass_annuli = integral(
+            np.sqrt(self.R[:-2] * self.R[1:-1]),
+            np.sqrt(self.R[1:-1] * self.R[2:]),
+            a,
+            b
+        )
         mass_enclosed = np.cumsum(np.r_[mass_central, mass_annuli])
-        mean_enclosed = mass_enclosed / (self.R[:-1] * self.R[1:])
+        mean_enclosed = mass_enclosed / (np.pi * self.R[:-1] * self.R[1:])
         return mean_enclosed - sigma
 
 
