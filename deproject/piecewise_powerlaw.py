@@ -130,9 +130,16 @@ class _ESD(object):
         if not self.extrapolate_outer:
             retval = retval[:, :-1]
         sigma = np.sum(retval, axis=1)
-        mean_enclosed = np.cumsum(
-            sigma * (np.power(self.R[1:], 2) - np.power(self.R[:-1], 2))) \
-            / np.power(.5 * (self.R[:-1] + self.R[1:]), 2)
+        # mean enclosed surface density integrals
+        a_central = 2 * (np.log(sigma[1]) - np.log(sigma[0])) \
+            / (np.log(self.R[2]) - np.log(self.R[0]))
+        b_central = np.log(sigma[0]) - a_central * np.log(self.R[0])
+        mass_central = 2 * np.exp(b_central) / (a_central + 2) \
+            * np.power(self.R[0] * self.R[1], a_central / 2 + 1)
+        mass_annuli = (1 - self.R[:-2] / self.R[2:]) \
+            * np.sqrt(sigma[:-1] * sigma[1:])
+        mass_enclosed = np.cumsum(np.r_[mass_central, mass_annuli])
+        mean_enclosed = mass_enclosed / (self.R[:-1] * self.R[1:])
         return mean_enclosed - sigma
 
 
