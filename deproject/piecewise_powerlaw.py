@@ -159,8 +159,8 @@ class _ESD(object):
 def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
-               startstep=.1, minstep=.001,
-               testwith_rho=None, verbose=False):
+               startstep=.1, minstep=None, tol=None,
+               testwith_rho=None, fom='chi2', verbose=False):
     esd = _ESD(
         r,
         R,
@@ -174,25 +174,36 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         else:
             raise ValueError
 
-    def _logLikelihood(rho):
-        retval = -np.sqrt(np.sum(np.power(np.log(esd(rho)) - np.log(obs), 2)))
-        if(np.isnan(retval).any()):
-            return -np.inf
-        else:
-            return retval
+    if fom == 'chi2':
+        def _logLikelihood(rho):
+            retval = -np.sqrt(np.sum(np.power(np.log(esd(rho))
+                                              - np.log(obs), 2)))
+            if(np.isnan(retval).any()):
+                return -np.inf
+            else:
+                return retval
+
+    elif fom == 'max':
+        def _logLikelihood(rho, fom=fom):
+            retval = -np.max(np.abs(np.log(esd(rho)) - np.log(obs)))
+            if(np.isnan(retval).any()):
+                return -np.inf
+            else:
+                return retval
+
+    else:
+        raise ValueError('Unknown fom.')
 
     def _logPrior(rho):
         # checking diff of exp(rho) equiv. diff of rho
         if (np.diff(rho) > 0).any():
             return -np.inf
         # required for convergence when extrapolating
-        if (np.log(rho[-1]) - np.log(rho[-2])) / \
-           (np.log(r[-1]) - np.log(r[-2])) >= -1:
-            # return -np.inf
-            raise ValueError('Outer extrapolation with slope > -1, '
-                             'iteration will get stuck.')
-        else:
-            return 0.0
+        if extrapolate_outer:
+            if (np.log(rho[-1]) - np.log(rho[-2])) / \
+               (np.log(r[-1]) - np.log(r[-2])) >= -1:
+                return -np.inf
+        return 0.0
 
     def _logProbability(rho):
         rho = np.exp(rho)
@@ -202,10 +213,12 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         else:
             return lp + _logLikelihood(rho)
 
-    def _optimize(guess, startstep=.1, minstep=.01, verbose=False):
+    def _optimize(guess, startstep=.1, minstep=None, tol=None, verbose=False):
         cv = np.log(guess)
         cp = _logProbability(cv)
         step = startstep
+        if (minstep is None) and (tol is None):
+            raise ValueError('No halting condition!')
         while True:
             if verbose:
                 print('STEP', step)
@@ -229,10 +242,16 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                 if verbose:
                     print('  P={:.6e}, S={:.6f}'.format(cp, step))
             step = step / 2.
-            if step < minstep:
-                break
+            if minstep is not None:
+                if step < minstep:
+                    break
+            if tol is not None:
+                if -cp < tol:
+                    break
+                if step < 1E-20:
+                    raise ValueError('Step too small without reaching tol.')
         best = np.exp(cv)
         return best
 
     return _optimize(guess, startstep=startstep, minstep=minstep,
-                     verbose=verbose)
+                     tol=tol, verbose=verbose)

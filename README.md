@@ -21,39 +21,50 @@ import numpy as np
 from deproject.piecewise_powerlaw import esd_to_rho, _ESD
 import matplotlib.pyplot as pp
 from matplotlib.backends.backend_pdf import PdfPages
+
+
+def exact(r):
+    # constant is wrong? i.e. my _ESD function is off by a constant?
+    return np.power(r, -1) / 4
+
+
 r = np.logspace(-3, 3, 10)
 R = np.logspace(-3, 3, 11)
 rho = np.power(r, -2) / (2 * np.pi)
-obs = None
 guess = np.power(r, -1.5) / np.pi
+Rmids = .5 * (R[1:] + R[:-1])  # do ***NOT*** use "log" centre
+obs = exact(Rmids)
 extrapolate_outer = True
 extrapolate_inner = True
 inner_extrapolation_type = 'extrapolate'
-startstep = np.min(-np.diff(np.log(guess))) / 3.  # probably reasonable
-minstep = .001
+startstep = np.min(-np.diff(np.log(guess)) * np.diff(np.log(Rmids))) / 3.
+tol = .01
+fom = 'chi2'
+optimize = True
 
-best = esd_to_rho(
-    obs,
-    guess,
-    r,
-    R,
-    extrapolate_inner=extrapolate_inner,
-    extrapolate_outer=extrapolate_outer,
-    inner_extrapolation_type=inner_extrapolation_type,
-    startstep=startstep,
-    minstep=minstep,
-    testwith_rho=rho,
-    verbose=True
-
-)
 esd = _ESD(
     r,
     R,
     extrapolate_inner=extrapolate_inner,
     extrapolate_outer=extrapolate_outer,
-    inner_extrapolation_type=inner_extrapolation_type
+    inner_extrapolation_type=inner_extrapolation_type,
 )
-Rmids = .5 * (R[1:] + R[:-1])  # do ***NOT*** use "log" centre
+
+if optimize:
+    best = esd_to_rho(
+        obs,
+        guess,
+        r,
+        R,
+        extrapolate_inner=extrapolate_inner,
+        extrapolate_outer=extrapolate_outer,
+        inner_extrapolation_type=inner_extrapolation_type,
+        startstep=startstep,
+        tol=tol,
+        fom=fom,
+        verbose=True
+    )
+
 with PdfPages('deproject.pdf') as pdffile:
     pp.figure(1)
     pp.xlabel(r'$\log_{10}r$')
@@ -61,7 +72,8 @@ with PdfPages('deproject.pdf') as pdffile:
     pp.plot(np.log10(r), np.log10(rho), '-b')
     pp.plot(np.log10(r), np.log10(guess), marker='o', mfc='None', mec='blue',
             ls='None')
-    pp.plot(np.log10(r), np.log10(best), 'ob')
+    if optimize:
+        pp.plot(np.log10(r), np.log10(best), 'ob')
     pp.savefig(pdffile, format='pdf')
 
     pp.figure(2)
@@ -70,7 +82,9 @@ with PdfPages('deproject.pdf') as pdffile:
     pp.plot(np.log10(Rmids), np.log10(esd(rho)), '-r')
     pp.plot(np.log10(Rmids), np.log10(esd(guess)), marker='o', mfc='None',
             mec='red', ls='None')
-    pp.plot(np.log10(Rmids), np.log10(esd(best)), 'or')
+    pp.plot(np.log10(Rmids), np.log10(obs), ':g')
+    if optimize:
+        pp.plot(np.log10(Rmids), np.log10(esd(best)), 'or')
     pp.savefig(pdffile, format='pdf')
 ```
 
@@ -85,8 +99,9 @@ guess = ???  # density profile, not shallower than -1 in outer part!
 extrapolate_outer = True
 extrapolate_inner = True
 inner_extrapolation_type = 'extrapolate'  # or 'flat'
-startstep = np.min(-np.diff(np.log(guess))) / 3.  # probably reasonable
-minstep = .001  # sets tolerance in fit in terms of Delta log(DeltaSigma)
+startstep = np.min(-np.diff(np.log(guess)) * np.diff(np.log(Rmids))) / 3.
+tol = .01
+fom = 'chi2'
 rho = esd_to_rho(
     obs,
     guess,
