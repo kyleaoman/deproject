@@ -131,7 +131,7 @@ class _ESD(object):
             retval = retval[:, :-1]
         sigma = np.sum(retval, axis=1)
         # mean enclosed surface density integrals
-        
+
         def integral(x0, x1, a, b):
             return 2 * np.pi * np.exp(b) / (a + 2) * \
                 (np.power(x1, a + 2) - np.power(x0, a + 2))

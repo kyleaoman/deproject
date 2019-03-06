@@ -53,7 +53,7 @@ esd = _ESD(
     extrapolate_outer=extrapolate_outer,
     inner_extrapolation_type=inner_extrapolation_type
 )
-Rmids = np.power(10, .5 * (np.log10(R[:-1]) + np.log10(R[1:])))
+Rmids = .5 * (R[1:] + R[:-1])  # do ***NOT*** use "log" centre
 with PdfPages('deproject.pdf') as pdffile:
     pp.figure(1)
     pp.xlabel(r'$\log_{10}r$')
