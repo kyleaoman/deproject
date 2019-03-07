@@ -130,6 +130,9 @@ class _ESD(object):
         if (aarr[:, -1] >= -1).any() and self.extrapolate_outer:
             raise ValueError('Outer extrapolation with density slope >= -1 '
                              'does not converge.')
+        if (aarr[:, -1] == 3).any() and self.extrapolate_outer:
+            raise ValueError('Outer extrapolation with density slope == 3 is '
+                             'unstable. (2.9999 or 3.0001, etc., is ok).')
         casevals = _caseeval(self.rarr, self.Rarr, aarr, barr)
         retval = np.zeros((len(self.R) - 1, len(self.r) + 1))
         for c, v in zip(self.cases, casevals):
