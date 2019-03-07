@@ -192,8 +192,12 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
 
     if fom == 'chi2':
         def _logLikelihood(rho):
-            retval = -np.sqrt(np.sum(np.power(np.log(esd(rho))
-                                              - np.log(obs), 2)))
+            try:
+                retval = -np.sqrt(np.sum(np.power(np.log(esd(rho))
+                                                  - np.log(obs), 2))) \
+                                                  / np.sqrt(rho.size)
+            except ValueError:
+                return -np.inf
             if(np.isnan(retval).any()):
                 return -np.inf
             else:
@@ -201,7 +205,10 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
 
     elif fom == 'max':
         def _logLikelihood(rho, fom=fom):
-            retval = -np.max(np.abs(np.log(esd(rho)) - np.log(obs)))
+            try:
+                retval = -np.max(np.abs(np.log(esd(rho)) - np.log(obs)))
+            except ValueError:
+                return -np.inf
             if(np.isnan(retval).any()):
                 return -np.inf
             else:
