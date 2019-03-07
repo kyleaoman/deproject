@@ -23,6 +23,7 @@ def _J(r, R, a):
         np.power(R, a + 3) / (a + 3),
         retval
     )
+    retval *= 2. / (-a - 1.)  # empirical correction
     retval[r == 0] = 0
     return retval
 
@@ -92,7 +93,7 @@ def _caseeval(r, R, a, b):
         - _J(r[:, :-1], R[1:], a) + _J(r[:, :-1], R[:-1], a)
     case5 = _J(r[:, 1:], r[:, :-1], a) - _J(r[:, 1:], R[:-1], a) \
         + _J(r[:, :-1], R[:-1], a) - _J(r[:, 1:], r[:, :-1], a)
-    pre = 4 / (np.power(R[1:], 2) - np.power(R[:-1], 2)) * np.exp(b)
+    pre = 4 * np.exp(b) / (np.power(R[1:], 2) - np.power(R[:-1], 2))
     return tuple([pre * c for c in (case0, case1, case2, case3, case4, case5)])
 
 
@@ -130,26 +131,27 @@ class _ESD(object):
         if not self.extrapolate_outer:
             retval = retval[:, :-1]
         sigma = np.sum(retval, axis=1)
-        # mean enclosed surface density integrals
+
+        # mean enclosed surface density integrals:
 
         def integral(x0, x1, a, b):
             return 2 * np.pi * np.exp(b) / (a + 2) * \
                 (np.power(x1, a + 2) - np.power(x0, a + 2))
 
-        a = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
+        aS = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
             / (np.log(self.R[2:]) - np.log(self.R[:-2]))
-        b = np.log(sigma[:-1]) - a * .5 * np.log(self.R[:-2] * self.R[1:-1])
+        bS = np.log(sigma[:-1]) - aS * .5 * np.log(self.R[:-2] * self.R[1:-1])
         mass_central = integral(
             0,
             np.sqrt(self.R[0] * self.R[1]),
-            a[0],
-            b[0]
+            aS[0],
+            bS[0]
         )
         mass_annuli = integral(
             np.sqrt(self.R[:-2] * self.R[1:-1]),
             np.sqrt(self.R[1:-1] * self.R[2:]),
-            a,
-            b
+            aS,
+            bS
         )
         mass_enclosed = np.cumsum(np.r_[mass_central, mass_annuli])
         mean_enclosed = mass_enclosed / (np.pi * self.R[:-1] * self.R[1:])
