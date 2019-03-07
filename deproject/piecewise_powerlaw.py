@@ -19,11 +19,11 @@ def _J(r, R, a):
         hyp2f1(1.5, -a / 2, 2.5, 1 - np.power(r / R, 2))
     retval = np.where(
         r == np.inf,
-        .5 * np.sqrt(np.pi) * gamma((1 - a) / 2) / gamma(-a / 2) *
+        .5 * np.sqrt(np.pi) * gamma(-(1 + a) / 2) / gamma(-a / 2) *
         np.power(R, a + 3) / (a + 3),
         retval
     )
-    retval *= 2. / (-a - 1.)  # empirical correction
+    # retval *= 2. / (-a - 1.)  # empirical correction
     retval[r == 0] = 0
     return retval
 
@@ -122,6 +122,14 @@ class _ESD(object):
         rhoarr = _rhoarr[:-1]
         aarr = _a(rhoarr, self.rarr, iet=self.inner_extrapolation_type)
         barr = _b(rhoarr, self.rarr, aarr)
+        if (aarr <= -5.).any():
+            raise ValueError('Density slope < -5 causes problems in surface '
+                             'density profile.')
+        if (aarr > 0).any():
+            raise ValueError('Density slope > 0 not supported.')
+        if (aarr[:, -1] >= -1).any() and self.extrapolate_outer:
+            raise ValueError('Outer extrapolation with density slope >= -1 '
+                             'does not converge.')
         casevals = _caseeval(self.rarr, self.Rarr, aarr, barr)
         retval = np.zeros((len(self.R) - 1, len(self.r) + 1))
         for c, v in zip(self.cases, casevals):
@@ -141,6 +149,9 @@ class _ESD(object):
         aS = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
             / (np.log(self.R[2:]) - np.log(self.R[:-2]))
         bS = np.log(sigma[:-1]) - aS * .5 * np.log(self.R[:-2] * self.R[1:-1])
+        if aS[0] < -2:
+            raise ValueError('Surface density has central slope < -2, '
+                             'central mass content is infinite.')
         mass_central = integral(
             0,
             np.sqrt(self.R[0] * self.R[1]),
