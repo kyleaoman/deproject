@@ -242,6 +242,7 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         cv = np.log(guess)
         cp = _logProbability(cv)
         step = startstep
+        tooslow = 0
         if (minstep is None) and (tol is None):
             raise ValueError('No halting condition!')
         while True:
@@ -254,14 +255,25 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                     fpp = _logProbability(cv + mod)
                     if fpp > cp:
                         cv = cv + mod
+                        if 1 - fpp / cp < 1.E-3:
+                            tooslow += 1
+                        else:
+                            tooslow = 0
                         cp = fpp
                     else:
                         fpm = _logProbability(cv - mod)
                         if fpm > cp:
                             cv = cv - mod
                             cp = fpm
+                            if 1 - fpm / cp < 1.E-3:
+                                tooslow += 1
+                            else:
+                                tooslow = 0
                         else:
                             done[nr] = True
+                    if tooslow > 100:
+                        warn('Iteration progress too slow.')
+                        return np.ones(cv.shape) * np.nan
                 if verbose:
                     print('  {:s}  P={:.6e}, S={:.6f}'.format(
                         prefix, cp, step))
