@@ -1,0 +1,41 @@
+\documentclass{article}
+\usepackage[margin=1.0in]{geometry}
+\usepackage{amsmath}
+
+\begin{document}
+We wish to invert the function $\Delta\Sigma(\rho)$, where $\Delta\Sigma(R) = \bar{\Sigma}(<R) - \Sigma(R)$ is the excess surface density (ESD), defined in terms of the surface density profile $\Sigma(R)$ and the mean enclosed surface density profile $\bar{\Sigma}(<R)$, where $R$ is the projected radial coordinate. $\rho(r)$ is the volume density profile, where $r$ is the spherical radial coordinate. The surface and volume density profiles are related as:
+\begin{align}
+  \Sigma(R) = 2\int_0^\infty\rho(R, z)dz\label{eq-Sigma}
+\end{align}
+with $r^2 = R^2 + z^2$.
+
+We assume a piecewise powerlaw volume density profile defined over a set of $N-1$ intervals $[r_n, r_{n+1})$, and extrapolated to $0$ and $\infty$ keeping the slope and normalization of the first and last intervals, respectively. We choose to define the profile in terms of $N$ pairs of values $(r_n,\rho_n)$:
+\begin{align}
+  \log\rho &= a_n \log(r) + b_n \\
+  a_n &= \frac{\log(\rho_{n+1})-\log(\rho_n)}{\log(r_{n+1})-\log(r_n)}\\
+  b_n &= \log(\rho_n) - a_n\log(r_n)\\
+  (a_n, b_n) &=
+  \begin{cases}
+    (a_0, b_0) & {\rm if}\ r < r_0\\
+    (a_n, b_n) & {\rm if}\ r_n \leq r < r_{n+1}\\
+    (a_{N-1}, b_{N-1}) & {\rm if}\ r \geq r_N
+  \end{cases}
+\end{align}
+(Throughout, $\log$ represents the natural logarithm.) Evaluating Eq.~\ref{eq-Sigma} for this volume density profile yields:
+\begin{align}
+  \Sigma(R) &= \sum_{n=0}^{N-1}
+  \begin{cases}
+    2e^{b_n}I_1(r_{n+1}, R, a_n) - I_1(r_n, R, a_n) & {\rm if}\ R < r_n\\
+    2e^{b_n}I_1(r_{n+1}, R, a_n) & {\rm if}\ r_n \leq R < r_{n+1}\\
+    0 & {\rm if}\ R \geq r_{n+1}\\
+  \end{cases}\\
+  I_1(r, R, a) &=
+  \begin{cases}
+    \sqrt{r^2-R^2}R^a{}_2F_1\left(\frac{1}{2},\frac{-a}{2};\frac{3}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
+    \frac{\sqrt{\pi}}{2}\frac{\Gamma\left(-\frac{a+1}{2}\right)}{\Gamma\left(-\frac{a}{2}\right)}R^{a+1} & {\rm if}\ r = \infty
+  \end{cases}
+\end{align}
+
+The ESD is measured in a series of $M-1$ projected radial intervals $[R_m, R_{m+1})$.
+\end{document}
+

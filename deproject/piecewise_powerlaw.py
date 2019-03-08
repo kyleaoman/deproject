@@ -264,11 +264,11 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                         fpm = _logProbability(cv - mod)
                         if fpm > cp:
                             cv = cv - mod
-                            cp = fpm
                             if 1 - fpm / cp < 1.E-3:
                                 tooslow += 1
                             else:
                                 tooslow = 0
+                            cp = fpm
                         else:
                             done[nr] = True
                     if tooslow > 100:
