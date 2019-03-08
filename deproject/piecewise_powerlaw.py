@@ -176,13 +176,13 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
                startstep=.1, minstep=None, tol=None,
-               testwith_rho=None, fom='chi2', verbose=False):
+               testwith_rho=None, fom='chi2', verbose=False, prefix=''):
     esd = _ESD(
         r,
         R,
-        extrapolate_inner=True,
-        extrapolate_outer=True,
-        inner_extrapolation_type='extrapolate'  # or 'flat'
+        extrapolate_inner=extrapolate_inner,
+        extrapolate_outer=extrapolate_outer,
+        inner_extrapolation_type=inner_extrapolation_type
     )
     if obs is None:
         if testwith_rho is not None:
@@ -236,15 +236,14 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         else:
             return lp + _logLikelihood(rho)
 
-    def _optimize(guess, startstep=.1, minstep=None, tol=None, verbose=False):
+    def _optimize(guess, startstep=startstep, minstep=minstep, tol=tol,
+                  verbose=verbose, prefix=prefix):
         cv = np.log(guess)
         cp = _logProbability(cv)
         step = startstep
         if (minstep is None) and (tol is None):
             raise ValueError('No halting condition!')
         while True:
-            if verbose:
-                print('STEP', step)
             done = np.zeros(len(cv), dtype=np.bool)
             while not done.all():
                 done = np.zeros(len(cv), dtype=np.bool)
@@ -263,7 +262,8 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                         else:
                             done[nr] = True
                 if verbose:
-                    print('  P={:.6e}, S={:.6f}'.format(cp, step))
+                    print('  {:s}  P={:.6e}, S={:.6f}'.format(
+                        prefix, cp, step))
             step = step / 2.
             if minstep is not None:
                 if step < minstep:
@@ -277,4 +277,4 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
         return best
 
     return _optimize(guess, startstep=startstep, minstep=minstep,
-                     tol=tol, verbose=verbose)
+                     tol=tol, verbose=verbose, prefix=prefix)
