@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[margin=1.0in]{geometry}
 \usepackage{amsmath}
+\usepackage{url}
 
 \begin{document}
 We wish to invert the function $\Delta\Sigma(\rho)$, where $\Delta\Sigma(R) = \bar{\Sigma}(<R) - \Sigma(R)$ is the excess surface density (ESD), defined in terms of the surface density profile $\Sigma(R)$ and the mean enclosed surface density profile $\bar{\Sigma}(<R)$, where $R$ is the projected radial coordinate. $\rho(r)$ is the volume density profile, where $r$ is the spherical radial coordinate. The surface and volume density profiles are related as:
@@ -31,11 +32,11 @@ We assume a piecewise powerlaw volume density profile defined over a set of $N-1
   \end{cases} \label{eq-Sigma-discrete}\\
   I_1(r, R, a) &=
   \begin{cases}
-    \sqrt{r^2-R^2}R^a{}_2F_1\left(\frac{1}{2},\frac{-a}{2};\frac{3}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
+    \sqrt{r^2-R^2}R^a{}_2{\rm F}_1\left(\frac{1}{2},\frac{-a}{2};\frac{3}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
     \frac{\sqrt{\pi}}{2}\frac{\Gamma\left(-\frac{a+1}{2}\right)}{\Gamma\left(-\frac{a}{2}\right)}R^{a+1} & {\rm if}\ r = \infty
   \end{cases}
 \end{align}
-where ${}_2F_1(\cdot,\cdot;\cdot;\cdot)$ is the hypergeometric function.
+where ${}_2{\rm F}_1(\cdot,\cdot;\cdot;\cdot)$ is the hypergeometric function.
 
 The ESD is measured in a series of $M-1$ projected radial intervals $[R_m, R_{m+1})$, so the surface density must be averaged in these annuli. We denote the average in the $m^{\rm th}$ annulus as $\Sigma_m$:
 \begin{align}
@@ -54,7 +55,7 @@ The value $\Sigma_m$ should be taken as representative of the surface density at
   \end{cases}\\
   &I_2(r,R,a) =
   \begin{cases}
-    -\frac{1}{3}R^{a+3}\left(\frac{r^2}{R^2}-1\right)^{\frac{3}{2}}{}_2F_1\left(\frac{3}{2},-\frac{a}{2};\frac{5}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
+    -\frac{1}{3}R^{a+3}\left(\frac{r^2}{R^2}-1\right)^{\frac{3}{2}}{}_2{\rm F}_1\left(\frac{3}{2},-\frac{a}{2};\frac{5}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
     \frac{\sqrt{\pi}}{2}\frac{\Gamma\left(-\frac{a+1}{2}\right)}{\Gamma\left(-\frac{a}{2}\right)}\frac{R^{a+3}}{a+3} & {\rm if}\ r=\infty
   \end{cases}
 \end{align}
@@ -84,5 +85,12 @@ A few notes on the validity \& convergence of the above equations:
 \end{itemize}
 
 TODO: probably $\Delta\Sigma$ is more sensitive to some parts of the $\rho$ profile than others. Do we need to somehow estimate confidence intervals on the individual $\rho_n$'s? We may not, since what we care about in the end is the enclosed mass ($M(<r)=4\pi\int_0^r\rho(r)r^2{\rm d}r$), so we should check the accuracy in this quantity and assess.
+
+\noindent\rule{.5\textwidth}{.4pt}
+
+In deriving the above equations, the identity below was pointed out by\footnote{\url{https://math.stackexchange.com/a/3069187/41587}} a Paul Enta; I am very grateful:
+\begin{align}
+\int  z^{c-1 }(1 - z)^{b - c-1}{}_2{\rm F}_1\left( a,b;c;z \right) &= z^c(1 - z)^{b - c}  \frac{\Gamma(c)}{\Gamma(c+1)} {}_2{\rm F}_1\left( 1+a,b;1+c;z \right)
+\end{align}
 \end{document}
 
