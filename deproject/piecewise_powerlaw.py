@@ -272,8 +272,12 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
                         else:
                             done[nr] = True
                     if tooslow > 100 * len(cv):
-                        warn('Iteration progress too slow.')
-                        return np.ones(cv.shape) * np.nan
+                        if -cp < tol:
+                            best = np.exp(cv)
+                            return best
+                        else:
+                            warn('Iteration progress too slow.')
+                            return np.ones(cv.shape) * np.nan
                 if verbose:
                     print('  {:s}  P={:.6e}, S={:.6f}'.format(
                         prefix, cp, step))
