@@ -9,7 +9,7 @@ We wish to invert the function $\Delta\Sigma(\rho)$, where $\Delta\Sigma(R) = \b
 \end{align}
 with $r^2 = R^2 + z^2$.
 
-We assume a piecewise powerlaw volume density profile defined over a set of $N-1$ intervals $[r_n, r_{n+1})$, and extrapolated to $0$ and $\infty$ keeping the slope and normalization of the first and last intervals, respectively. We choose to define the profile in terms of $N$ pairs of values $(r_n,\rho_n)$:
+We assume a piecewise powerlaw volume density profile defined over a set of $N-1$ intervals $[r_n, r_{n+1})$, and extrapolated to $0$ and $\infty$ using the slope and normalization of the first and last intervals, respectively. We do not include the terms corresponding to these extrapolations in the derivation below, but note that these simply add two extra terms to any sum over $n$, one with $(r_n,r_{n+1},a_n,b_n) = (0, r_0, a_0, b_0)$ and the other with $(r_n,r_{n+1},a_n,b_n) = (r_N, \infty, a_{N-1}, b_{N-1})$. We include some useful expressions below, particularly for cases when $r=\infty$. We choose to define the profile in terms of $N$ pairs of values $(r_n,\rho_n)$:
 \begin{align}
   \log\rho &= a_n \log(r) + b_n \\
   a_n &= \frac{\log(\rho_{n+1})-\log(\rho_n)}{\log(r_{n+1})-\log(r_n)}\\
@@ -28,14 +28,61 @@ We assume a piecewise powerlaw volume density profile defined over a set of $N-1
     2e^{b_n}I_1(r_{n+1}, R, a_n) - I_1(r_n, R, a_n) & {\rm if}\ R < r_n\\
     2e^{b_n}I_1(r_{n+1}, R, a_n) & {\rm if}\ r_n \leq R < r_{n+1}\\
     0 & {\rm if}\ R \geq r_{n+1}\\
-  \end{cases}\\
+  \end{cases} \label{eq-Sigma-discrete}\\
   I_1(r, R, a) &=
   \begin{cases}
     \sqrt{r^2-R^2}R^a{}_2F_1\left(\frac{1}{2},\frac{-a}{2};\frac{3}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
     \frac{\sqrt{\pi}}{2}\frac{\Gamma\left(-\frac{a+1}{2}\right)}{\Gamma\left(-\frac{a}{2}\right)}R^{a+1} & {\rm if}\ r = \infty
   \end{cases}
 \end{align}
+where ${}_2F_1(\cdot,\cdot;\cdot;\cdot)$ is the hypergeometric function.
 
-The ESD is measured in a series of $M-1$ projected radial intervals $[R_m, R_{m+1})$.
+The ESD is measured in a series of $M-1$ projected radial intervals $[R_m, R_{m+1})$, so the surface density must be averaged in these annuli. We denote the average in the $m^{\rm th}$ annulus as $\Sigma_m$:
+\begin{align}
+  \Sigma_m &= \frac{2\pi}{\pi\left(R_{m=1}^2-R_m^2\right)}\int_{R_m}^{R_{m+1}}\Sigma(R)R\,{\rm d}R \label{eq-Sigmam}
+\end{align}
+The value $\Sigma_m$ should be taken as representative of the surface density at the bin centre $\frac{1}{2}\left(R_m+R_{m+1}\right)$ (and \emph{not} the logarithmic bin centre $\sqrt{R_mR_{m+1}}$). This will ensure the accuracy of the calculation of $\bar{\Sigma}$, detailed below. Evaluating Eq.~\ref{eq-Sigmam} for $\Sigma(R)$ as given in Eq.~\ref{eq-Sigma-discrete} yields:
+\begin{align}
+  &\Sigma_m = \sum_{n=0}^{N-1}
+  \begin{cases}
+    0 & {\rm if}\ r_{n+1} < R_m\\
+    \frac{4e^{b_n}}{R_{m+1}^2-R_m^2} \left(-I_2(r_{n+1},R_m,a_n)\right) & {\rm if}\ r_n < R_m\ {\rm and}\ R_m \leq r_{n+1} < R_{m+1}\\
+    \frac{4e^{b_n}}{R_{m+1}^2-R_m^2} \left(I_2(r_{n+1},R_{m+1},a_n)-I_2(r_{n+1},R_m,a_n)\right) & {\rm if}\ r_n < R_m\ {\rm and}\ r_{n+1} \geq R_{m+1}\\
+    \frac{4e^{b_n}}{R_{m+1}^2-R_m^2} (I_2(r_{n+1},r_n,a_n)-I_2(r_{n+1},R_m,a_n)\\ \quad +I_2(r_n,R_m,a_n)+I_2(r_{n+1},R_{m+1},a_n)\\ \quad -I_2(r_{n+1},r_n,a_n)) & {\rm if}\ R_m \leq r_n < R_{m+1}\ {\rm and}\ r_n \geq R_{m+1}\\
+    \frac{4e^{b_n}}{R_{m+1}^2-R_m^2} (I_2(r_{n+1},R_{m+1},a_n)-I_2(r_{n+1},R_m,a_n)\\ \quad -I_2(r_n,R_{m+1},a_n)+I_2(r_n,R_m,a_n)) & {\rm if}\ r_n \geq R_{m+1}\\
+    \frac{4e^{b_n}}{R_{m+1}^2-R_m^2} (I_2(r_{n+1},r_n,a_n)-I_2(r_{n+1},R_m,a_n)\\ \quad +I_2(r_n,R_m,a_n)-I_2(r_{n+1},r_n,a_n)) & {\rm if}\ r_n \geq R_m\ {\rm and}\ r_{n+1} < R_m\\
+  \end{cases}\\
+  &I_2(r,R,a) =
+  \begin{cases}
+    -\frac{1}{3}R^{a+3}\left(\frac{r^2}{R^2}-1\right)^{\frac{3}{2}}{}_2F_1\left(\frac{3}{2},-\frac{a}{2};\frac{5}{2};1-\frac{r^2}{R^2}\right) & {\rm if}\ r\ {\rm is}\ {\rm finite}\\
+    \frac{\sqrt{\pi}}{2}\frac{\Gamma\left(-\frac{a+1}{2}\right)}{\Gamma\left(-\frac{a}{2}\right)}\frac{R^{a+3}}{a+3} & {\rm if}\ r=\infty
+  \end{cases}
+\end{align}
+The mean enclosed surface density is computed assuming that $\Sigma(R)$ is a piecewise powerlaw defined by the points $(\sqrt{R_mR_{m+1}}, \Sigma_m)$. This is extrapolated to the centre using the slope and normalization defined by the $m=0$ and $m=1$ points.
+\begin{align}
+  \bar{\Sigma}(R) &= \frac{2\pi\int_0^R\Sigma(R)R{\rm d}R}{2\pi\int_0^RR{\rm d}R}\\
+  \bar{\Sigma}_m &= \frac{1}{\pi R_mR_{m+1}}\left[I_3(0, \sqrt{R_0R_1}, \tilde{a}_0, \tilde{b}_0) + \sum_{k=0}^m I_3(\sqrt{R_mR_{m+1}},\sqrt{R_{m+1}R_{m+2}}, \tilde{a}_m, \tilde{b}_m)\right]\label{eq-barSigmam}\\
+  \tilde{a}_m &= \frac{\log(\Sigma_{m+1})-\log(\Sigma_m)}{\frac{1}{2}\left(\log(R_{m+2})-\log(R_m)\right)}\\
+  \tilde{b}_m &= \log(\Sigma_m) - \frac{1}{2}\tilde{a}_m\log(R_mR_{m+1})\\
+  I_3(R_i,R_j,\tilde{a},\tilde{b}) &= \frac{2\pi e^{\tilde{b}}}{\tilde{a}+2}\left(R_j^{a+2} - R_i^{a+2}\right)
+\end{align}
+
+Finally, the discrete ESD profile is:
+\begin{align}
+  \Delta\Sigma_m &= \bar{\Sigma}_m - \Sigma_m
+\end{align}
+
+To perform the inversion, the $\{R_m\}$, $\{\Delta\Sigma_m\}_{\rm observed}$ and $\{r_n\}$ values are taken as constant inputs. Recall $R_m$ are interval \emph{edges} and so there is one more value in the set of $\{R_m\}$ than in the set of $\{\Delta\Sigma_m\}$. Further, the number of free parameters and the number of constraints requires $N < M$ (usually it is reasonable to set $N=M-1$). The values $r_n$ must be (I think?) logarithmically evenly spaced. They may be distributed across any interval in principle, but it makes most sense for them to span about the same interval as the set of ${R_m}$ values, as this is where most of the constaining power of the data lies. Given these constant inputs and an initial guess $\{\rho_n\}$, the guess is iteratively perturbed. At each step, the $\{\Delta\Sigma_m\}$ values corresponding to the $\{\rho_n\}$ values are calculated and compared to the ${\Delta\Sigma_m}$ values. Iteration continues until an acceptable match is achieved.
+
+A few notes on the validity \& convergence of the above equations:
+\begin{itemize}
+  \item The derivation above assumes values of $a_n \leq 0$.
+  \item Values of $a_n \leq -5$ seem to cause problems. So far this is an empirical observation, not sure if this is a quirk of the numerical evaluation of the functions or if it breaks the limits of validity of some equation.
+  \item $a_{N-1} \geq -1$ results in infinite total mass, so the equations will not converge.
+  \item Evaluating the equations with $a_{N-1} = -3$ is numerically unstable (i.e. $-3(1\pm\epsilon)$, where $\epsilon \ll 1$, is ok). In practice this just means that starting with a guess $\propto r^{-3}$ is a bad idea.
+  \item If $\tilde{a}_0 < -2$, the central mass content (first term in Eq.~\ref{eq-barSigmam}) will not converge.
+\end{itemize}
+
+TODO: probably $\Delta\Sigma$ is more sensitive to some parts of the $\rho$ profile than others. Do we need to somehow estimate confidence intervals on the individual $\rho_n$'s? We may not, since what we care about in the end is the enclosed mass ($M(<r)=4\pi\int_0^r\rho(r)r^2{\rm d}r$), so we should check the accuracy in this quantity and assess.
 \end{document}
 
