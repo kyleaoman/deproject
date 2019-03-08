@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import hyp2f1, gamma
+from warnings import warn
 
 
 def _a(rho, r, iet=1):
@@ -271,8 +272,9 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
             if tol is not None:
                 if -cp < tol:
                     break
-                if step < 1E-20:
-                    raise ValueError('Step too small without reaching tol.')
+                if step < 1E-9 * startstep:
+                    warn('Step too small without reaching tol.')
+                    return np.ones(cv.shape) * np.nan
         best = np.exp(cv)
         return best
 
