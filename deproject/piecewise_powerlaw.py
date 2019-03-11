@@ -24,9 +24,27 @@ def _J(r, R, a):
         np.power(R, a + 3) / (a + 3),
         retval
     )
-    # retval *= 2. / (-a - 1.)  # empirical correction
     retval[r == 0] = 0
     return retval
+
+
+def rho_to_mencl(rho, r, extrapolate_outer=True, extrapolate_inner=True,
+                 inner_extrapolation_type='extrapolate'):
+    if inner_extrapolation_type not in ('extrapolate', 'flat'):
+        raise ValueError("inner_extrapolation_type must be 'extrapolate' "
+                         "or 'flat'.")
+    else:
+        iet = {'extrapolate': 1, 'flat': 0}[inner_extrapolation_type]
+    a = _a(rho, r, iet=iet)
+    b = _b(rho, r, a)
+    r = np.hstack((
+        np.zeros(r.shape[:-1] + (1,)),
+        r,
+        np.ones(r.shape[:-1] + (1,)) * np.inf
+    ))
+    m = 4 * np.pi * np.exp(b) / (a + 3) \
+        * (np.power(r[..., 1:], a + 3) - np.power(r[..., :-1], a + 3))
+    return np.cumsum(m, axis=-1), r[..., 1:]
 
 
 def _casemap(r, R):
