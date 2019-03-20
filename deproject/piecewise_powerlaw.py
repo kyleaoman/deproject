@@ -44,7 +44,7 @@ def rho_to_mencl(rho, r, extrapolate_outer=True, extrapolate_inner=True,
     ))
     m = 4 * np.pi * np.exp(b) / (a + 3) \
         * (np.power(r[..., 1:], a + 3) - np.power(r[..., :-1], a + 3))
-    return np.cumsum(m, axis=-1), r[..., 1:]
+    return np.cumsum(m[..., :-1], axis=-1), r[..., 1:-1]
 
 
 def _casemap(r, R):
@@ -146,6 +146,9 @@ class _ESD(object):
                              'density profile.')
         if (aarr > 0).any():
             raise ValueError('Density slope > 0 not supported.')
+        if (aarr[:, 0] <= -3).any() and self.extrapolate_inner:
+            raise ValueError('Inner extrapolation with density slope <= -3 '
+                             'has infinite mass.')
         if (aarr[:, -1] >= -1).any() and self.extrapolate_outer:
             raise ValueError('Outer extrapolation with density slope >= -1 '
                              'does not converge.')
@@ -171,8 +174,8 @@ class _ESD(object):
         aS = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
             / (np.log(self.R[2:]) - np.log(self.R[:-2]))
         bS = np.log(sigma[:-1]) - aS * .5 * np.log(self.R[:-2] * self.R[1:-1])
-        if aS[0] < -2:
-            raise ValueError('Surface density has central slope < -2, '
+        if aS[0] <= -2:
+            raise ValueError('Surface density has central slope <= -2, '
                              'central mass content is infinite.')
         mass_central = integral(
             0,
