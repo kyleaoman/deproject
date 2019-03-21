@@ -204,7 +204,7 @@ def esd_to_rho(obs, obs_err, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
                testwith_rho=None, truths=None, niter=5500, burn=500,
-               savecorner='corner.pdf'):
+               savecorner='corner.pdf', parallel=8):
     guess = [np.log(g) for g in guess]
     if truths is not None:
         truths = [np.log(t) for t in truths]
@@ -235,7 +235,7 @@ def esd_to_rho(obs, obs_err, guess, r, R, extrapolate_inner=True,
     statmodel.extrapolate_outer = extrapolate_outer
     RAP = Rap(statmodel)
     olderr = np.seterr(all='ignore')
-    RAP.fit(guess, niter=niter, burn=burn, parallel=True)
+    RAP.fit(guess, niter=niter, burn=burn, parallel=parallel)
     np.seterr(**olderr)
     RAP.cornerfig(save=savecorner, fignum=999,
                   labels=statmodel.labels, truths=truths)
