@@ -16,17 +16,36 @@ def _b(rho, r, a):
 
 
 def _J(r, R, a):
-    retval = -(1 / 3) * np.power(R, a + 3) * \
-        np.power(np.power(r / R, 2) - 1, 1.5) * \
-        hyp2f1(1.5, -a / 2, 2.5, 1 - np.power(r / R, 2))
-    retval = np.where(
-        r == np.inf,
-        .5 * np.sqrt(np.pi) * gamma(-(1 + a) / 2) / gamma(-a / 2) *
-        np.power(R, a + 3) / (a + 3),
-        retval
-    )
-    retval[r == 0] = 0
-    return retval
+    # same speed for small arrays, faster for large arrays
+    mask_first = (r[:, 0] == 0).all()
+    mask_last = (r[:, -1] == np.inf).all()
+    if mask_first and not mask_last:
+        mask = np.s_[:, 1:]
+    elif not mask_first and mask_last:
+        mask = np.s_[:, :-1]
+    elif mask_first and mask_last:
+        mask = np.s_[:, 1:-1]
+    else:
+        mask = np.s_[:, :]
+    retval = -(1 / 3) * np.power(R[mask], a[mask] + 3) * \
+        np.power(np.power(r[mask] / R[mask], 2) - 1, 1.5) * \
+        hyp2f1(1.5, -a[mask] / 2, 2.5, 1 - np.power(r[mask] / R[mask], 2))
+    if mask_last:
+        last = .5 * np.sqrt(np.pi) * gamma(-(1 + a[:, -1]) / 2) / \
+            gamma(-a[:, -1] / 2) * np.power(R[:, -1], a[:, -1] + 3) / \
+            (a[:, -1] + 3)
+    if mask_first and not mask_last:
+        return np.hstack((np.zeros((r.shape[0], 1)), retval))
+    elif not mask_first and mask_last:
+        return np.hstack((retval, last.reshape(last.shape + (1,))))
+    elif mask_first and mask_last:
+        return np.hstack((
+            np.zeros((r.shape[0], 1)),
+            retval,
+            last.reshape(last.shape + (1,))
+        ))
+    else:
+        return retval
 
 
 def rho_to_mencl(rho, r, extrapolate_outer=True, extrapolate_inner=True,
@@ -46,6 +65,12 @@ def rho_to_mencl(rho, r, extrapolate_outer=True, extrapolate_inner=True,
     m = 4 * np.pi * np.exp(b) / (a + 3) \
         * (np.power(r[..., 1:], a + 3) - np.power(r[..., :-1], a + 3))
     return np.cumsum(m[..., :-1], axis=-1), r[..., 1:-1]
+
+
+# mean enclosed surface density integrals:
+def sigmabar_encl_integral(x0, x1, a, b):
+    return 2 * np.pi * np.exp(b) / (a + 2) * \
+        (np.power(x1, a + 2) - np.power(x0, a + 2))
 
 
 def _casemap(r, R):
@@ -139,8 +164,7 @@ class _ESD(object):
         return
 
     def __call__(self, rho):
-        _rhoarr, _junk = np.meshgrid(rho, self.R)
-        rhoarr = _rhoarr[:-1]
+        rhoarr = np.repeat(np.array(rho)[np.newaxis], self.R.size - 1, axis=0)
         aarr = _a(rhoarr, self.rarr, iet=self.inner_extrapolation_type)
         barr = _b(rhoarr, self.rarr, aarr)
         if (aarr <= -5.).any():
@@ -169,25 +193,19 @@ class _ESD(object):
         if self.mode == 'Sigma':
             return sigma
 
-        # mean enclosed surface density integrals:
-
-        def integral(x0, x1, a, b):
-            return 2 * np.pi * np.exp(b) / (a + 2) * \
-                (np.power(x1, a + 2) - np.power(x0, a + 2))
-
         aS = 2 * (np.log(sigma[1:]) - np.log(sigma[:-1])) \
             / (np.log(self.R[2:]) - np.log(self.R[:-2]))
         bS = np.log(sigma[:-1]) - aS * .5 * np.log(self.R[:-2] * self.R[1:-1])
         if aS[0] <= -2:
             raise ValueError('Surface density has central slope <= -2, '
                              'central mass content is infinite.')
-        mass_central = integral(
+        mass_central = sigmabar_encl_integral(
             0,
             np.sqrt(self.R[0] * self.R[1]),
             aS[0],
             bS[0]
         )
-        mass_annuli = integral(
+        mass_annuli = sigmabar_encl_integral(
             np.sqrt(self.R[:-2] * self.R[1:-1]),
             np.sqrt(self.R[1:-1] * self.R[2:]),
             aS,
