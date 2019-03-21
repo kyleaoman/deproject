@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import hyp2f1, gamma
-from warnings import warn
+from . import statmodel
+from rap import Rap
 
 
 def _a(rho, r, iet=1):
@@ -119,7 +120,7 @@ def _caseeval(r, R, a, b):
 class _ESD(object):
 
     def __init__(self, r, R, extrapolate_outer=True, extrapolate_inner=True,
-                 inner_extrapolation_type='extrapolate'):
+                 inner_extrapolation_type='extrapolate', mode='ESD'):
         self.r = r
         self.R = R
         _rarr, _Rarr = np.meshgrid(r, R)
@@ -128,6 +129,7 @@ class _ESD(object):
         self.cases = _casemap(self.rarr, self.Rarr)
         self.extrapolate_outer = extrapolate_outer
         self.extrapolate_inner = extrapolate_inner
+        self.mode = mode
         if inner_extrapolation_type not in ('extrapolate', 'flat'):
             raise ValueError("inner_extrapolation_type must be 'extrapolate' "
                              "or 'flat'.")
@@ -164,6 +166,8 @@ class _ESD(object):
         if not self.extrapolate_outer:
             retval = retval[:, :-1]
         sigma = np.sum(retval, axis=1)
+        if self.mode == 'Sigma':
+            return sigma
 
         # mean enclosed surface density integrals:
 
@@ -191,15 +195,23 @@ class _ESD(object):
         )
         mass_enclosed = np.cumsum(np.r_[mass_central, mass_annuli])
         mean_enclosed = mass_enclosed / (np.pi * self.R[:-1] * self.R[1:])
-        return mean_enclosed - sigma
+        if self.mode == 'ESD':
+            return mean_enclosed - sigma
+        raise ValueError('Unknown mode.')
 
 
-def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
+def esd_to_rho(obs, obs_err, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
-               startstep=.1, minstep=None, tol=None,
-               testwith_rho=None, fom='chi2', verbose=False, prefix=''):
-    esd = _ESD(
+               testwith_rho=None, truths=None, niter=5500, burn=500,
+               savecorner='corner.pdf'):
+    guess = [np.log(g) for g in guess]
+    if truths is not None:
+        truths = [np.log(t) for t in truths]
+    statmodel.ndim = len(r)
+    statmodel.labels = [r'$\rho_{'+'{:.0f}'.format(i)+r'}$'
+                        for i in range(len(r))]
+    statmodel.esd = _ESD(
         r,
         R,
         extrapolate_inner=extrapolate_inner,
@@ -208,112 +220,24 @@ def esd_to_rho(obs, guess, r, R, extrapolate_inner=True,
     )
     if obs is None:
         if testwith_rho is not None:
-            obs = esd(testwith_rho)
+            statmodel.obs = statmodel.esd(testwith_rho)
         else:
             raise ValueError
-
-    if fom == 'chi2':
-        def _logLikelihood(rho):
-            try:
-                retval = -np.sqrt(np.sum(np.power(np.log(esd(rho))
-                                                  - np.log(obs), 2))) \
-                                                  / np.sqrt(rho.size)
-            except ValueError:
-                return -np.inf
-            if(np.isnan(retval).any()):
-                return -np.inf
-            else:
-                return retval
-
-    elif fom == 'max':
-        def _logLikelihood(rho, fom=fom):
-            try:
-                retval = -np.max(np.abs(np.log(esd(rho)) - np.log(obs)))
-            except ValueError:
-                return -np.inf
-            if(np.isnan(retval).any()):
-                return -np.inf
-            else:
-                return retval
-
     else:
-        raise ValueError('Unknown fom.')
-
-    def _logPrior(rho):
-        # checking diff of exp(rho) equiv. diff of rho
-        if (np.diff(rho) > 0).any():
-            return -np.inf
-        # required for convergence when extrapolating
-        if extrapolate_outer:
-            if (np.log(rho[-1]) - np.log(rho[-2])) / \
-               (np.log(r[-1]) - np.log(r[-2])) >= -1:
-                return -np.inf
-        return 0.0
-
-    def _logProbability(rho):
-        rho = np.exp(rho)
-        lp = _logPrior(rho)
-        if not np.isfinite(lp):
-            return -np.inf
-        else:
-            return lp + _logLikelihood(rho)
-
-    def _optimize(guess, startstep=startstep, minstep=minstep, tol=tol,
-                  verbose=verbose, prefix=prefix):
-        cv = np.log(guess)
-        cp = _logProbability(cv)
-        step = startstep
-        tooslow = 0
-        if (minstep is None) and (tol is None):
-            raise ValueError('No halting condition!')
-        while True:
-            done = np.zeros(len(cv), dtype=np.bool)
-            while not done.all():
-                done = np.zeros(len(cv), dtype=np.bool)
-                for nr in range(len(cv)):
-                    mod = np.zeros(len(cv))
-                    mod[nr] = step
-                    fpp = _logProbability(cv + mod)
-                    if fpp > cp:
-                        cv = cv + mod
-                        if 1 - fpp / cp < 1.E-3:
-                            tooslow += 1
-                        else:
-                            tooslow = 0
-                        cp = fpp
-                    else:
-                        fpm = _logProbability(cv - mod)
-                        if fpm > cp:
-                            cv = cv - mod
-                            if 1 - fpm / cp < 1.E-3:
-                                tooslow += 1
-                            else:
-                                tooslow = 0
-                            cp = fpm
-                        else:
-                            done[nr] = True
-                    if tooslow > 100 * len(cv):
-                        if -cp < tol:
-                            best = np.exp(cv)
-                            return best
-                        else:
-                            warn('Iteration progress too slow.')
-                            return np.ones(cv.shape) * np.nan
-                if verbose:
-                    print('  {:s}  P={:.6e}, S={:.6f}'.format(
-                        prefix, cp, step))
-            step = step / 2.
-            if minstep is not None:
-                if step < minstep:
-                    break
-            if tol is not None:
-                if -cp < tol:
-                    break
-                if step < 1E-9 * startstep:
-                    warn('Step too small without reaching tol.')
-                    return np.ones(cv.shape) * np.nan
-        best = np.exp(cv)
-        return best
-
-    return _optimize(guess, startstep=startstep, minstep=minstep,
-                     tol=tol, verbose=verbose, prefix=prefix)
+        statmodel.obs = obs
+    if obs_err.ndim == 1:
+        obs_err = np.diag(obs_err)
+    try:
+        statmodel.inv_cov = np.linalg.inv(obs_err)
+    except np.linalg.LinAlgError:
+        raise ValueError('Could not invert covariance matrix.')
+    statmodel.r = r
+    statmodel.extrapolate_outer = extrapolate_outer
+    RAP = Rap(statmodel)
+    olderr = np.seterr(all='ignore')
+    RAP.fit(guess, niter=niter, burn=burn, parallel=True)
+    np.seterr(**olderr)
+    RAP.cornerfig(save=savecorner, fignum=999,
+                  labels=statmodel.labels, truths=truths)
+    return [np.exp(rl) for rl in RAP.results['perc_16_50_84']], \
+        np.exp(RAP.results['theta_ml'])
