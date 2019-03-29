@@ -2,17 +2,24 @@ import numpy as np
 from scipy.special import hyp2f1, gamma
 from . import statmodel
 from rap import Rap
+from kyleaoman_utilities.slvars import savevars, loadvars
+
+
+def to_gobs(m, r):
+    import astropy.units as U
+    import astropy.constants as C
+    return (C.G * m * U.Msun / np.power(r * U.Mpc, 2)).to(U.m / U.s ** 2).value
 
 
 def _a(rho, r, iet=1):
-    retval = (np.log(rho[:, 1:]) - np.log(rho[:, :-1])) / \
-        (np.log(r[:, 1:]) - np.log(r[:, :-1]))
-    return np.hstack((iet * retval[:, :1], retval, retval[:, -1:]))
+    retval = (np.log(rho[..., 1:]) - np.log(rho[..., :-1])) / \
+        (np.log(r[..., 1:]) - np.log(r[..., :-1]))
+    return np.hstack((iet * retval[..., :1], retval, retval[..., -1:]))
 
 
 def _b(rho, r, a):
-    retval = np.log(rho[:, :-1]) - a[:, 1:-1] * np.log(r[:, :-1])
-    return np.hstack((retval[:, :1], retval, retval[:, -1:]))
+    retval = np.log(rho[..., :-1]) - a[..., 1:-1] * np.log(r[..., :-1])
+    return np.hstack((retval[..., :1], retval, retval[..., -1:]))
 
 
 def _J(r, R, a):
@@ -170,8 +177,8 @@ class _ESD(object):
         if (aarr <= -5.).any():
             raise ValueError('Density slope < -5 causes problems in surface '
                              'density profile.')
-        if (aarr > 0).any():
-            raise ValueError('Density slope > 0 not supported.')
+        # if (aarr > 0).any():
+        #     raise ValueError('Density slope > 0 not supported.')
         if (aarr[:, 0] <= -3).any() and self.extrapolate_inner:
             raise ValueError('Inner extrapolation with density slope <= -3 '
                              'has infinite mass.')
@@ -214,15 +221,15 @@ class _ESD(object):
         mass_enclosed = np.cumsum(np.r_[mass_central, mass_annuli])
         mean_enclosed = mass_enclosed / (np.pi * self.R[:-1] * self.R[1:])
         if self.mode == 'ESD':
-            return mean_enclosed - sigma
+            return mean_enclosed - sigma, sigma
         raise ValueError('Unknown mode.')
 
 
-def esd_to_rho(obs, obs_err, guess, r, R, extrapolate_inner=True,
+def esd_to_rho(obs, obs_var, guess, r, R, extrapolate_inner=True,
                extrapolate_outer=True,
                inner_extrapolation_type='extrapolate',
                testwith_rho=None, truths=None, niter=5500, burn=500,
-               savecorner='corner.pdf', parallel=8):
+               savecorner='corner.pdf', parallel=8, cache=None):
     guess = [np.log(g) for g in guess]
     if truths is not None:
         truths = [np.log(t) for t in truths]
@@ -238,24 +245,64 @@ def esd_to_rho(obs, obs_err, guess, r, R, extrapolate_inner=True,
     )
     if obs is None:
         if testwith_rho is not None:
-            statmodel.obs = statmodel.esd(testwith_rho)
+            statmodel.obs = statmodel.esd(testwith_rho)[0]
         else:
             raise ValueError
     else:
         statmodel.obs = obs
-    if obs_err.ndim == 1:
-        obs_err = np.diag(obs_err)
+    if obs_var.ndim == 1:
+        obs_var = np.diag(obs_var)
     try:
-        statmodel.inv_cov = np.linalg.inv(obs_err)
+        statmodel.inv_cov = np.linalg.inv(obs_var)
     except np.linalg.LinAlgError:
         raise ValueError('Could not invert covariance matrix.')
     statmodel.r = r
     statmodel.extrapolate_outer = extrapolate_outer
     RAP = Rap(statmodel)
-    olderr = np.seterr(all='ignore')
-    RAP.fit(guess, niter=niter, burn=burn, parallel=parallel)
-    np.seterr(**olderr)
-    RAP.cornerfig(save=savecorner, fignum=999,
-                  labels=statmodel.labels, truths=truths)
-    return [np.exp(rl) for rl in RAP.results['perc_16_50_84']], \
-        np.exp(RAP.results['theta_ml'])
+    if cache is not None:
+        try:
+            RAP.results, = loadvars(cache)
+        except IOError:
+            runfit = True
+        else:
+            runfit = False
+    else:
+        runfit = True
+    if runfit:
+        olderr = np.seterr(all='ignore')
+        RAP.fit(guess, niter=niter, burn=burn, parallel=parallel)
+        np.seterr(**olderr)
+        if cache is not None:
+            savevars([RAP.results], cache)
+    if savecorner:
+        RAP.cornerfig(save=savecorner, fignum=999,
+                      labels=statmodel.labels, truths=truths)
+    for key in ('thetas', 'theta_ml'):
+        RAP.results[key] = np.exp(RAP.results[key])
+    RAP.results['theta_evals'] = RAP.results['thetas']  # alias
+    for key in ('theta_perc_16_50_84', ):
+        RAP.results[key] = [np.exp(rl) for rl in RAP.results[key]]
+    RAP.results['esd_evals'] = np.array([b[0] for b in RAP.results['blobs']])
+    RAP.results['esd_ml'] = RAP.results['esd_evals'][
+        np.argmax(RAP.results['lnL'])
+    ]
+    RAP.results['esd_perc_16_50_84'] = list(zip(
+        *np.percentile(RAP.results['esd_evals'], [16, 50, 84], axis=0)))
+    RAP.results['sigma_evals'] = np.array([b[1] for b in RAP.results['blobs']])
+    RAP.results['sigma_ml'] = RAP.results['sigma_evals'][
+        np.argmax(RAP.results['lnL'])
+    ]
+    RAP.results['sigma_perc_16_50_84'] = list(zip(
+        *np.percentile(RAP.results['sigma_evals'], [16, 50, 84], axis=0)))
+    RAP.results['mencl_evals'] = rho_to_mencl(RAP.results['thetas'], r)[0]
+    RAP.results['mencl_ml'] = rho_to_mencl(RAP.results['theta_ml'], r)[0]
+    RAP.results['mencl_perc_16_50_84'] = list(zip(
+        *np.percentile(RAP.results['mencl_evals'], [16, 50, 84], axis=0)))
+    RAP.results['gobs_evals'] = to_gobs(RAP.results['mencl_evals'], r)
+    RAP.results['gobs_ml'] = to_gobs(RAP.results['mencl_ml'], r)
+    RAP.results['gobs_perc_16_50_84'] = list(zip(
+        *np.percentile(RAP.results['gobs_evals'], [16, 50, 84], axis=0)))
+    RAP.results['r'] = r
+    RAP.results['R'] = R
+    RAP.results['Rmid'] = .5 * (R[1:] + R[:-1])  # intentionally not log centre
+    return RAP.results
