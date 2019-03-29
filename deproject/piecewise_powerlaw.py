@@ -2,7 +2,6 @@ import numpy as np
 from scipy.special import hyp2f1, gamma
 from . import statmodel
 from rap import Rap
-from kyleaoman_utilities.slvars import savevars, loadvars
 
 
 def to_gobs(m, r):
@@ -260,6 +259,7 @@ def esd_to_rho(obs, obs_var, guess, r, R, extrapolate_inner=True,
     statmodel.extrapolate_outer = extrapolate_outer
     RAP = Rap(statmodel)
     if cache is not None:
+        from kyleaoman_utilities.slvars import savevars, loadvars
         try:
             RAP.results, = loadvars(cache)
         except IOError:
