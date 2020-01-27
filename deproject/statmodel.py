@@ -17,7 +17,7 @@ def logPrior(rho):
         if (np.log(rho[-1]) - np.log(rho[-2])) / \
            (np.log(r[-1]) - np.log(r[-2])) >= -1:
                 return -np.inf
-        return 0.0
+    return 0.0
 
 
 def logLikelihood(rho):
