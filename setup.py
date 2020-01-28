@@ -9,7 +9,7 @@ setup(
     author_email='koman@astro.rug.nl',
     license='GNU GPL v3',
     packages=['deproject'],
-    install_requires=['numpy', 'scipy'],
+    install_requires=['numpy', 'scipy', 'rap'],
     include_package_data=True,
     zip_safe=False
 )
