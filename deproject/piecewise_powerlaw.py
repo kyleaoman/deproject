@@ -55,8 +55,7 @@ def _J(r, R, a):
 
 
 def rho_to_mencl(rho, r, extrapolate_outer=True, extrapolate_inner=True,
-                 inner_extrapolation_type='extrapolate',
-                 force_central_mass=None):
+                 inner_extrapolation_type='extrapolate'):
     if inner_extrapolation_type not in ('extrapolate', 'flat'):
         raise ValueError("inner_extrapolation_type must be 'extrapolate' "
                          "or 'flat'.")
@@ -206,15 +205,12 @@ class _ESD(object):
         if aS[0] <= -2:
             raise ValueError('Surface density has central slope <= -2, '
                              'central mass content is infinite.')
-        if force_central_mass:
-            mass_central = force_central_mass
-        else:
-            mass_central = sigmabar_encl_integral(
-                0,
-                np.sqrt(self.R[0] * self.R[1]),
-                aS[0],
-                bS[0]
-            )
+        mass_central = sigmabar_encl_integral(
+            0,
+            np.sqrt(self.R[0] * self.R[1]),
+            aS[0],
+            bS[0]
+        )
         mass_annuli = sigmabar_encl_integral(
             np.sqrt(self.R[:-2] * self.R[1:-1]),
             np.sqrt(self.R[1:-1] * self.R[2:]),
