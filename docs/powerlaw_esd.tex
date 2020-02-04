@@ -1,0 +1,40 @@
+\documentclass{article}
+\usepackage{amsmath}
+\title{Power law $\rho$ and $\Delta\Sigma$}
+\author{Kyle Oman}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent For a power law density profile:
+\begin{align}
+  \rho(r) = \rho_0 r^\alpha
+\end{align}
+The surface density profile is:
+\begin{align}
+  \Sigma(R) = \sqrt{\pi}\rho_0\frac{\Gamma\left(-\frac{\alpha+1}{2}\right)}{\Gamma\left(-\frac{\alpha}{2}\right)}R^{\alpha+1}
+\end{align}
+And the mean enclosed surface density is:
+\begin{align}
+  \frac{2\sqrt{\pi}\rho_0}{\alpha+3}\frac{\Gamma\left(-\frac{\alpha+1}{2}\right)}{\Gamma\left(-\frac{\alpha}{2}\right)}R^{\alpha+1}
+\end{align}
+So the slopes are related very simply:
+\begin{align}
+  \beta = \frac{{\rm d}\log\Delta\Sigma}{{\rm d}\log R} =  \frac{{\rm d}\log\rho}{{\rm d}\log r} + 1
+\end{align}
+And given a measurement of $\Delta\Sigma$ at a location $R$ and an estimate of its slope $\beta$ at the same point, then the normalization constant of the density is:
+\begin{align}
+  \rho_0 = \frac{\Delta\Sigma}{\sqrt{\pi}\left(\frac{2}{\beta+2}\right)\frac{\Gamma\left(-\frac{\beta}{2}\right)}{\Gamma\left(-\frac{\beta-1}{2}\right)}R^\beta}
+\end{align}
+The enclosed mass is:
+\begin{align}
+  M(<r) = 4\sqrt{\pi}r^2\Delta\Sigma\left(\frac{\Gamma\left(-\frac{\beta-1}{2}\right)}{\Gamma\left(-\frac{\beta}{2}\right)}\right)\left(\frac{2+\beta}{-\beta}\right)
+\end{align}
+In the singular isothermal sphere case ($\beta=-1$), this reduces to $M(<r)=4r^2\Delta\Sigma$, as expected. Finally, the acceleration is:
+\begin{align}
+  g(r) = 4\sqrt{\pi}G\Delta\Sigma\left(\frac{\Gamma\left(-\frac{\beta-1}{2}\right)}{\Gamma\left(-\frac{\beta}{2}\right)}\right)\left(\frac{2+\beta}{-\beta}\right)
+\end{align}
+Note that actually using this as an enclosed mass estimator or acceleration estimator on any $\Delta\Sigma$ profile that is not a pure power law is a Really Bad Idea and is likely to imply the presence of negative mass (just like the SIS estimator does if ${\rm d}\log\Delta\Sigma/{\rm d}\log R < -2$).
+
+\end{document}
